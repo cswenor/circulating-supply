@@ -10,13 +10,13 @@ async function fetchCombinedData() {
       const response = await fetch('/api/circulating-supply');
       const data = await response.json();
   
-      // Update the Circulating Supply
-      const circulatingSupply = Number(data.circulatingSupply) / 1e6; // Convert atomic units to standard units
+      // Update the Circulating Supply (already in base units with decimals)
+      const circulatingSupply = data.circulatingSupply;
       document.getElementById('supply-info').innerHTML = `
         <h1>Voi Circulating Supply</h1>
         <p><strong>Total Supply:</strong> 10,000,000,000 VOI</p>
-        <p><strong>Circulating Supply:</strong> ${circulatingSupply.toLocaleString(undefined, { maximumFractionDigits: 2 })} VOI</p>
-        <p><strong>Percentage Circulating:</strong> ${(circulatingSupply / 10000000000 * 100).toFixed(2)}%</p>
+        <p><strong>Circulating Supply:</strong> ${circulatingSupply} VOI</p>
+        <p><strong>Percentage Circulating:</strong> ${(circulatingSupply / 10_000_000_000 * 100).toFixed(2)}%</p>
       `;
   
       // Update the Locked Accounts Table

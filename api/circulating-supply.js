@@ -4,7 +4,7 @@ const NodeCache = require('node-cache');
 const lockedAccounts = require('./locked-accounts-list'); // Import the locked accounts list
 
 // Initialize cache with a TTL of 10 minutes (600 seconds)
-const cache = new NodeCache({ stdTTL: 600 });
+const cache = new NodeCache({ stdTTL: 60 });
 
 // Initialize Algod client for Voi blockchain
 const algodClient = new algosdk.Algodv2(
@@ -13,7 +13,7 @@ const algodClient = new algosdk.Algodv2(
   '' // No port required
 );
 
-// Total supply of Voi as BigInt (assuming 6 decimal places like Algorand)
+// Total supply of Voi as BigInt (in atomic units)
 const TOTAL_SUPPLY = BigInt(10_000_000_000) * BigInt(1_000_000);
 
 // Function to calculate the total balance of locked accounts
@@ -40,21 +40,22 @@ module.exports = async (req, res) => {
     if (!circulatingSupply) {
       // Recalculate if not cached or cache has expired
       const lockedBalance = await getLockedAccountsBalance();
-      const calculatedSupply = TOTAL_SUPPLY - lockedBalance;
+      const calculatedSupplyAtomic = TOTAL_SUPPLY - lockedBalance;
 
-      // Store the new value in cache
-      cache.set('circulatingSupply', calculatedSupply.toString());
+      // Convert from atomic units to base units (decimals) before caching
+      circulatingSupply = Number(calculatedSupplyAtomic) / 1e6;
 
-      circulatingSupply = calculatedSupply;
+      // Cache the result (already in base units with decimals)
+      cache.set('circulatingSupply', circulatingSupply);
     }
 
-    // Send combined response with circulating supply and locked accounts
+    // Send the combined response with circulating supply (in base units with decimals) and locked accounts
     res.status(200).json({
-      circulatingSupply: circulatingSupply.toString(),
+      circulatingSupply: circulatingSupply.toFixed(6), // Always return 6 decimal places
       lockedAccounts: lockedAccounts,
     });
   } catch (err) {
-    console.error('Error in /api/combined-data:', err);
+    console.error('Error in /api/circulating-supply:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
