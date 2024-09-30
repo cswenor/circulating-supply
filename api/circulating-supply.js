@@ -1,28 +1,19 @@
-// api/circulating-supply.js
+// api/combined-data.js
 const algosdk = require('algosdk');
-const fs = require('fs');
 const NodeCache = require('node-cache');
+const lockedAccounts = require('./locked-accounts-list'); // Import the locked accounts list
 
 // Initialize cache with a TTL of 10 minutes (600 seconds)
 const cache = new NodeCache({ stdTTL: 600 });
 
-// Read locked accounts from a flat file on startup
-let lockedAccounts = [];
-try {
-  const data = fs.readFileSync('locked_accounts.txt', 'utf8');
-  lockedAccounts = data.split('\n').filter(Boolean);
-} catch (err) {
-  console.error('Error reading locked accounts file:', err);
-}
-
 // Initialize Algod client for Voi blockchain
 const algodClient = new algosdk.Algodv2(
-  '',
+  '', // No token required
   'https://mainnet-api.voi.nodely.dev',
-  ''
+  '' // No port required
 );
 
-// Total supply of Voi as BigInt
+// Total supply of Voi as BigInt (assuming 6 decimal places like Algorand)
 const TOTAL_SUPPLY = BigInt(10_000_000_000) * BigInt(1_000_000);
 
 // Function to calculate the total balance of locked accounts
@@ -46,26 +37,24 @@ module.exports = async (req, res) => {
     // Check if circulating supply is cached
     let circulatingSupply = cache.get('circulatingSupply');
 
-    if (circulatingSupply === undefined) {
+    if (!circulatingSupply) {
       // Recalculate if not cached or cache has expired
       const lockedBalance = await getLockedAccountsBalance();
       const calculatedSupply = TOTAL_SUPPLY - lockedBalance;
 
-      // Store the new value in cache as a string
+      // Store the new value in cache
       cache.set('circulatingSupply', calculatedSupply.toString());
 
       circulatingSupply = calculatedSupply;
-    } else {
-      // Convert cached value back to BigInt
-      circulatingSupply = BigInt(circulatingSupply);
     }
 
-    // Set Cache-Control header to cache the response for 10 minutes (600 seconds)
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
-
-    res.status(200).json({ circulatingSupply: circulatingSupply.toString() });
+    // Send combined response with circulating supply and locked accounts
+    res.status(200).json({
+      circulatingSupply: circulatingSupply.toString(),
+      lockedAccounts: lockedAccounts,
+    });
   } catch (err) {
-    console.error('Error in /api/circulating-supply:', err);
+    console.error('Error in /api/combined-data:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

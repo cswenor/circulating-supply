@@ -1,47 +1,25 @@
 // public/scripts/main.js
 
-async function fetchCirculatingSupply() {
+async function fetchCombinedData() {
     try {
-      // Show the supply spinner
+      // Show the supply spinner and accounts spinner
       document.getElementById('supply-spinner').style.display = 'flex';
-  
-      const response = await fetch('/api/circulating-supply');
-      const data = await response.json();
-      const circulatingSupply = Number(data.circulatingSupply) / 1e6;
-  
-      // Calculate percentage circulating
-      const totalSupply = 10_000_000_000;
-      const percentageCirculating = (circulatingSupply / totalSupply) * 100;
-  
-      // Update the supply-info container
-      document.getElementById('supply-info').innerHTML = `
-        <h1>Voi Circulating Supply</h1>
-        <p><strong>Total Supply:</strong> ${totalSupply.toLocaleString()} VOI</p>
-        <p><strong>Circulating Supply:</strong> ${circulatingSupply.toLocaleString(undefined, { maximumFractionDigits: 2 })} VOI</p>
-        <p><strong>Percentage Circulating:</strong> ${percentageCirculating.toFixed(2)}%</p>
-      `;
-    } catch (error) {
-      console.error('Error fetching circulating supply:', error);
-      document.getElementById('supply-info').innerHTML = `
-        <div class="alert alert-danger" role="alert">
-          Failed to load circulating supply data.
-        </div>
-      `;
-    } finally {
-      // Hide the supply spinner
-      document.getElementById('supply-spinner').style.display = 'none';
-    }
-  }
-  
-  async function fetchLockedAccounts() {
-    try {
-      // Show the accounts spinner
       document.getElementById('accounts-spinner').style.display = 'flex';
   
-      const response = await fetch('/api/locked-accounts');
+      // Fetch data from the combined API endpoint
+      const response = await fetch('/api/circulating-supply');
       const data = await response.json();
-      const lockedAccounts = data.lockedAccounts;
   
+      // Update the Circulating Supply
+      const circulatingSupply = Number(data.circulatingSupply) / 1e6; // Convert atomic units to standard units
+      document.getElementById('supply-info').innerHTML = `
+        <h1>Voi Circulating Supply</h1>
+        <p><strong>Total Supply:</strong> 10,000,000,000 VOI</p>
+        <p><strong>Circulating Supply:</strong> ${circulatingSupply.toLocaleString(undefined, { maximumFractionDigits: 2 })} VOI</p>
+        <p><strong>Percentage Circulating:</strong> ${(circulatingSupply / 10000000000 * 100).toFixed(2)}%</p>
+      `;
+  
+      // Update the Locked Accounts Table
       let tableContent = `
         <thead class="thead-dark">
           <tr>
@@ -51,7 +29,7 @@ async function fetchCirculatingSupply() {
         <tbody>
       `;
   
-      lockedAccounts.forEach(account => {
+      data.lockedAccounts.forEach(account => {
         tableContent += `
           <tr>
             <td>${account}</td>
@@ -61,26 +39,31 @@ async function fetchCirculatingSupply() {
   
       tableContent += '</tbody>';
   
-      // Update the accounts table
       document.getElementById('accounts-table').innerHTML = tableContent;
-      // Show the accounts table
+  
+      // Show the accounts table and hide spinner
       document.getElementById('accounts-table').style.display = 'table';
+      document.getElementById('accounts-spinner').style.display = 'none';
     } catch (error) {
-      console.error('Error fetching locked accounts:', error);
+      console.error('Error fetching combined data:', error);
+      document.getElementById('supply-info').innerHTML = `
+        <div class="alert alert-danger" role="alert">
+          Failed to load circulating supply data.
+        </div>
+      `;
       document.querySelector('.table-responsive').innerHTML = `
         <div class="alert alert-danger" role="alert">
           Failed to load locked accounts data.
         </div>
       `;
     } finally {
-      // Hide the accounts spinner
-      document.getElementById('accounts-spinner').style.display = 'none';
+      // Hide the spinners for supply data
+      document.getElementById('supply-spinner').style.display = 'none';
     }
   }
   
-  // Fetch data on page load
+  // Fetch combined data on page load
   document.addEventListener('DOMContentLoaded', () => {
-    fetchCirculatingSupply();
-    fetchLockedAccounts();
+    fetchCombinedData();
   });
   
