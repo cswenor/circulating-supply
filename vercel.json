@@ -14,7 +14,10 @@
       {
         "src": "/api/circulating-supply",
         "headers": {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=30"
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=30",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Headers": "Content-Type"
         },
         "dest": "/api/circulating-supply.js"
       },
